@@ -1,7 +1,5 @@
 import { Schema, model } from 'mongoose';
 
-import { model, Schema } from 'mongoose';
-
 const contactsSchema = new Schema(
   {
     name: {
@@ -32,5 +30,5 @@ const contactsSchema = new Schema(
   },
 );
 
-const ContactsCollection = model('contacts', contactSchema);
+const ContactsCollection = model('contacts', contactsSchema);
 export default ContactsCollection;
