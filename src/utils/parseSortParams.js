@@ -1,4 +1,4 @@
-import { sortList } from '../constants.js';
+import { sortList } from '../constants/index.js';
 import { contactSortField } from '../db/Model/contactsmodel.js';
 
 export const parseSortParams = ({ sortBy, sortOrder }) => {
@@ -6,7 +6,7 @@ export const parseSortParams = ({ sortBy, sortOrder }) => {
     ? sortOrder
     : sortList[0];
 
-  const parsedSortBy = contactSortField.includes(sortBy ? sortBy : '_id');
+  const parsedSortBy = contactSortField.includes(sortBy) ? sortBy : 'name';
 
   return {
     sortBy: parsedSortBy,

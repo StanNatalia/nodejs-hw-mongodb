@@ -13,10 +13,17 @@ import { parseSortParams } from '../utils/parseSortParams.js';
 
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 
+import { parseContactFilterParams } from '../utils/filter/parseContactFilterParams.js';
+
 export const getContactsController = async (req, res) => {
   const paginationParams = parsePaginationParams(req.query);
   const sortParams = parseSortParams(req.query, contactSortField);
-  const data = await getContacts(...paginationParams, ...sortParams);
+  const filters = parseContactFilterParams(req.query);
+  const data = await getContacts({
+    ...paginationParams,
+    ...sortParams,
+    filters,
+  });
   res.status(200).json({
     status: 200,
     message: 'Successfully found contacts!',
@@ -24,7 +31,7 @@ export const getContactsController = async (req, res) => {
   });
 };
 
-export const getContactsBuIdController = async (req, res, next) => {
+export const getContactsByIdController = async (req, res, next) => {
   const { contactId } = req.params;
   const data = await getContactsById(contactId);
 
@@ -44,13 +51,13 @@ export const addContactController = async (req, res) => {
 
   res.status(201).json({
     status: 201,
-    message: 'Successfully add movie',
+    message: 'Successfully added movie',
     data,
   });
 };
 
 export const upsetContactsController = async (req, res) => {
-  const { id } = res.params;
+  const { id } = req.params;
   const { data, isNew } = await updateContacts(id, req.body, { upsert: true });
   const status = isNew ? 201 : 200;
 
@@ -80,7 +87,7 @@ export const deleteContactsController = async (req, res) => {
   const data = await deleteContactById(contactId);
 
   if (!data) {
-    throw createHttpError(404, `Contact with id+${contactId} not found`);
+    throw createHttpError(404, `Contact with id=${contactId} not found`);
   }
   res.status(204).send();
 };

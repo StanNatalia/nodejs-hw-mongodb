@@ -7,15 +7,30 @@ import { sortList } from '../constants/index.js';
 export const getContacts = async ({
   page = 1,
   perPage = 10,
-  sortBy = '_id',
+  sortBy = 'name',
   sortOrder = sortList[0],
+  filters = {},
 }) => {
   const skip = (page - 1) * perPage;
-  const data = await ContactsCollection.find()
+
+  const contactQuery = ContactsCollection.find();
+
+  if (filters.isFavourite) {
+    contactQuery.where('isFavourite').equals(filters.isFavourite);
+  }
+  if (filters.type) {
+    contactQuery.where('type').equals(filters.type);
+  }
+
+  const sortDirection = sortOrder === 'desc' ? -1 : 1;
+
+  const data = await contactQuery
     .skip(skip)
     .limit(perPage)
-    .sort({ [sortBy]: sortOrder });
-  const totalItems = await ContactsCollection.find().countDocuments();
+    .sort({ [sortBy]: sortDirection });
+  const totalItems = await ContactsCollection.find()
+    .merge(contactQuery)
+    .countDocuments();
 
   const paginationData = calcPaginationData({ page, perPage, totalItems });
 
