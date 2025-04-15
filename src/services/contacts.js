@@ -15,11 +15,11 @@ export const getContacts = async ({
 
   const contactQuery = ContactsCollection.find();
 
-  if (filters.isFavourite) {
+  if (filters.isFavourite !== undefined) {
     contactQuery.where('isFavourite').equals(filters.isFavourite);
   }
   if (filters.type) {
-    contactQuery.where('type').equals(filters.type);
+    contactQuery.where('contactType').equals(filters.type);
   }
 
   const sortDirection = sortOrder === 'desc' ? -1 : 1;
@@ -31,6 +31,8 @@ export const getContacts = async ({
   const totalItems = await ContactsCollection.find()
     .merge(contactQuery)
     .countDocuments();
+
+  console.log(filters);
 
   const paginationData = calcPaginationData({ page, perPage, totalItems });
 

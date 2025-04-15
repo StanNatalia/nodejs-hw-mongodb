@@ -1,9 +1,12 @@
 import { typeList } from '../../constants/contacts.js';
 
 const parseBoolean = (value) => {
+  if (typeof value === 'boolean') return value;
+
   if (typeof value === 'string') {
-    if (value.toLocaleLowerCase() === 'true') return true;
-    if (value.toLocaleLowerCase() === 'false') return false;
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed === 'true') return true;
+    if (trimmed === 'false') return false;
   }
 
   return undefined;
