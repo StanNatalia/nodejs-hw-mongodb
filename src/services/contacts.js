@@ -24,13 +24,14 @@ export const getContacts = async ({
 
   const sortDirection = sortOrder === 'desc' ? -1 : 1;
 
+  const totalItems = await ContactsCollection.find()
+    .merge(contactQuery)
+    .countDocuments();
+
   const data = await contactQuery
     .skip(skip)
     .limit(perPage)
     .sort({ [sortBy]: sortDirection });
-  const totalItems = await ContactsCollection.find()
-    .merge(contactQuery)
-    .countDocuments();
 
   const paginationData = calcPaginationData({ page, perPage, totalItems });
 
