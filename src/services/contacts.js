@@ -5,6 +5,7 @@ import { calcPaginationData } from '../utils/calcPaginationData.js';
 import { sortList } from '../constants/index.js';
 
 export const getContacts = async ({
+  userId,
   page = 1,
   perPage = 10,
   sortBy = 'name',
@@ -13,7 +14,7 @@ export const getContacts = async ({
 }) => {
   const skip = (page - 1) * perPage;
 
-  const contactQuery = ContactsCollection.find();
+  const contactQuery = ContactsCollection.find({ userId });
 
   if (filters.userId) {
     contactQuery.where('userId').equals(filters.userId);
@@ -48,15 +49,15 @@ export const getContacts = async ({
   };
 };
 
-export const getContactsById = (contactId) =>
-  ContactsCollection.findOne({ _id: contactId });
+export const getContactsById = (contactId, userId) =>
+  ContactsCollection.findOne({ _id: contactId, userId });
 
 export const addContact = (payload) => ContactsCollection.create(payload);
 
-export const updateContacts = async (_id, payload, options = {}) => {
+export const updateContacts = async (_id, payload, options = {}, userId) => {
   const { upsert = false } = options;
   const rawResult = await ContactsCollection.findOneAndUpdate(
-    { _id },
+    { _id, userId },
     payload,
     {
       new: true,
@@ -73,5 +74,5 @@ export const updateContacts = async (_id, payload, options = {}) => {
   };
 };
 
-export const deleteContactById = (_id) =>
-  ContactsCollection.findOneAndDelete({ _id });
+export const deleteContactById = (_id, userId) =>
+  ContactsCollection.findOneAndDelete({ _id, userId });
