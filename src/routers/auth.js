@@ -4,7 +4,10 @@ import { ctrlWrapper } from '../utils/ctrlWrapper.js';
 import { validateBody } from '../utils/validateBody.js';
 
 import { resetPasswordSchema } from '../validation/auth.js';
-import { resetPasswordController } from '../controllers/auth.js';
+import {
+  resetPasswordController,
+  verifyEmailController,
+} from '../controllers/auth.js';
 
 import {
   authRegisterSchema,
@@ -39,6 +42,8 @@ authRouter.post(
   validateBody(authRegisterSchema),
   ctrlWrapper(registerController),
 );
+
+authRouter.get('/verify', verifyEmailController);
 
 authRouter.post(
   '/login',

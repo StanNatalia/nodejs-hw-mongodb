@@ -13,6 +13,8 @@ import { authenticate } from '../middlewares/authenticate.js';
 
 import { validateBody } from '../utils/validateBody.js';
 
+import { upload } from '../middlewares/multer.js';
+
 import {
   contactAddSchema,
   contactUpdateSchema,
@@ -48,6 +50,7 @@ contactsRouter.put(
 contactsRouter.patch(
   '/:contactId',
   isValid,
+  upload.single('posterURL'),
   validateBody(contactUpdateSchema),
   ctrlWrapper(patchContactsController),
 );

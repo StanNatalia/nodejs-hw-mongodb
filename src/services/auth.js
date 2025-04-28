@@ -94,6 +94,8 @@ export const registerUser = async (payload) => {
     { expiresIn: '1h' },
   );
 
+  console.log('TOKEN TO VERIFY:', emailVerifyToken);
+
   const templateSource = await fs.readFile(verifyEmailPath, 'utf-8');
   const template = Handlebars.compile(templateSource);
 
@@ -109,6 +111,28 @@ export const registerUser = async (payload) => {
 
   await sendEmail(verifyEmail);
   return newUser;
+};
+
+export const verifyUserEmail = async (token) => {
+  let payload;
+  try {
+    payload = jvt.verify(token, getEnvVar('JWT_SECRET'));
+  } catch (err) {
+    throw createHttpError(401, 'Invalid or expired token');
+  }
+  const user = await UserCollection.findOne({
+    _id: payload.sub,
+    email: payload.email,
+  });
+  if (!user) {
+    throw createHttpError(404, 'User not found');
+  }
+  if (user.verify) {
+    throw createHttpError(400, 'Email already verified');
+  }
+
+  user.verify = true;
+  await user.save();
 };
 
 export const resetPassword = async (payload) => {
@@ -135,6 +159,19 @@ export const resetPassword = async (payload) => {
     { _id: user._id },
     { password: encryptedPassword },
   );
+
+  const emailOptions = {
+    from: getEnvVar('SMTP_FROM'),
+    to: user.email,
+    subject: 'Password successfully reset',
+    html: `<p>Your password was successfully reset. You can log with your new password</p>`,
+  };
+
+  try {
+    await sendEmail(emailOptions);
+  } catch (error) {
+    throw createHttpError(500, `Failled to send email, please try again later`);
+  }
 };
 
 export const loginUser = async (payload) => {

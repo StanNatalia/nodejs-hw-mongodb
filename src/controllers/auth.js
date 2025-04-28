@@ -8,13 +8,7 @@ import {
 
 import { resetPassword } from '../services/auth.js';
 
-import createHttpError from 'http-errors';
-
-import jvt from 'jsonwebtoken';
-
-import { getEnvVar } from '../utils/getEnvVar.js';
-
-import UserCollection from '../db/Model/User.js';
+import { verifyUserEmail } from '../services/auth.js';
 
 export const requestResetEmailController = async (req, res) => {
   await requestResetToken(req.body.email);
@@ -28,27 +22,29 @@ export const requestResetEmailController = async (req, res) => {
 export const verifyEmailController = async (req, res) => {
   const { token } = req.query;
 
-  let payload;
-  try {
-    payload = jvt.verify(token, getEnvVar('JWT_SECRET'));
-  } catch {
-    throw createHttpError(401, 'Invalid or expired token');
-  }
+  await verifyUserEmail(token);
 
-  const user = await UserCollection.findOne({
-    _id: payload.sub,
-    email: payload.email,
-  });
-  if (!user) {
-    throw createHttpError(404, 'User not found');
-  }
+  // let payload;
+  // try {
+  //   payload = jvt.verify(token, getEnvVar('JWT_SECRET'));
+  // } catch {
+  //   throw createHttpError(401, 'Invalid or expired token');
+  // }
 
-  if (user.verify) {
-    throw createHttpError(400, 'Email already verified');
-  }
+  // const user = await UserCollection.findOne({
+  //   _id: payload.sub,
+  //   email: payload.email,
+  // });
+  // if (!user) {
+  //   throw createHttpError(404, 'User not found');
+  // }
 
-  user.verify = true;
-  await user.save();
+  // if (user.verify) {
+  //   throw createHttpError(400, 'Email already verified');
+  // }
+
+  // user.verify = true;
+  // await user.save();
 
   res.json({
     status: 200,
