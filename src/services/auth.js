@@ -26,6 +26,40 @@ import jvt from 'jsonwebtoken';
 
 import { sendEmail } from '../utils/sendMail.js';
 
+export const resetPassword = async (payload) => {
+  let entries;
+  try {
+    entries = jvt.verify(payload.token, getEnvVar('JWT_SECRET'));
+  } catch (err) {
+    if (err instanceof Error) throw createHttpError(401, err.message);
+    throw err;
+  }
+  const user = await UserCollection.findOne({
+    email: entries.email,
+    _id: entries.sub,
+  });
+
+  if (!user) {
+    throw createHttpError(404, 'User not found');
+  }
+  const encryptedPassword = await bcrypt.hash(payload.password, 10);
+  await UserCollection.updateOne(
+    { _id: user._id },
+    { password: encryptedPassword },
+  );
+  const emailOptions = {
+    from: getEnvVar('SMTP_FROM'),
+    to: user.email,
+    subject: 'Password successfully reset',
+    html: `<p>Your password was successfully reset. You can log with your new password</p>`,
+  };
+  try {
+    await sendEmail(emailOptions);
+  } catch (error) {
+    throw createHttpError(500, `Failed to send email, please try again later`);
+  }
+};
+
 export const requestResetToken = async (email) => {
   const user = await UserCollection.findOne({ email });
   if (!user) {
@@ -41,22 +75,33 @@ export const requestResetToken = async (email) => {
       expiresIn: '5m',
     },
   );
+
+  const resetPasswordTemplatePath = path.join(
+    TEMPLATE_DIR,
+    'reset-password-email.html',
+  );
+  const templateSource = (
+    await fs.readFile(resetPasswordTemplatePath)
+  ).toString();
+
+  const template = Handlebars.compile(templateSource);
+  const html = template({
+    name: user.name,
+    link: `${getEnvVar('APP_DOMAIN')}/auth/reset-password?token=${resetToken}`,
+  });
+
   await sendEmail({
     from: getEnvVar(SMTP.SMTP_FROM),
     to: email,
     subject: 'Reset your password',
-    html: `<p>Click <a href="${getEnvVar(
-      'APP_DOMAIN',
-    )}/auth/reset-password?token=${resetToken}">here</a> to reset your password!</p>`,
+    html,
   });
 };
-
 const createSession = () => {
   const accessToken = randomBytes(30).toString('base64');
   const refreshToken = randomBytes(30).toString('base64');
   const accessTokenValidUntil = Date.now() + accessTokenLifeTime;
   const refreshTokenValidUntil = Date.now() + refreshTokenLifeTime;
-
   return {
     accessToken,
     refreshToken,
@@ -69,109 +114,14 @@ export const findSession = (query) => SessionCollection.findOne(query);
 
 export const findUser = (query) => UserCollection.findOne(query);
 
-const verifyEmailPath = path.join(TEMPLATE_DIR, 'verify-email.html');
-
 export const registerUser = async (payload) => {
   const { email, password } = payload;
   const user = await findUser({ email });
   if (user) {
     throw createHttpError(409, 'Email already used');
   }
-
   const hashPassword = await bcrypt.hash(password, 10);
-
-  const newUser = await UserCollection.create({
-    ...payload,
-    password: hashPassword,
-  });
-
-  const emailVerifyToken = jvt.sign(
-    {
-      sub: newUser._id,
-      email: newUser.email,
-    },
-    getEnvVar('JWT_SECRET'),
-    { expiresIn: '1h' },
-  );
-
-  console.log('TOKEN TO VERIFY:', emailVerifyToken);
-
-  const templateSource = await fs.readFile(verifyEmailPath, 'utf-8');
-  const template = Handlebars.compile(templateSource);
-
-  const html = template({
-    verifyLink: `${getEnvVar('APP_DOMAIN')}/verify?token=${emailVerifyToken}`,
-  });
-  const verifyEmail = {
-    from: getEnvVar(SMTP.SMTP_FROM),
-    to: email,
-    subject: 'Verify email',
-    html,
-  };
-
-  await sendEmail(verifyEmail);
-  return newUser;
-};
-
-export const verifyUserEmail = async (token) => {
-  let payload;
-  try {
-    payload = jvt.verify(token, getEnvVar('JWT_SECRET'));
-  } catch (err) {
-    throw createHttpError(401, 'Invalid or expired token');
-  }
-  const user = await UserCollection.findOne({
-    _id: payload.sub,
-    email: payload.email,
-  });
-  if (!user) {
-    throw createHttpError(404, 'User not found');
-  }
-  if (user.verify) {
-    throw createHttpError(400, 'Email already verified');
-  }
-
-  user.verify = true;
-  await user.save();
-};
-
-export const resetPassword = async (payload) => {
-  let entries;
-
-  try {
-    entries = jvt.verify(payload.token, getEnvVar('JWT_SECRET'));
-  } catch (err) {
-    if (err instanceof Error) throw createHttpError(401, err.message);
-    throw err;
-  }
-  const user = await UserCollection.findOne({
-    email: entries.email,
-    _id: entries.sub,
-  });
-
-  if (!user) {
-    throw createHttpError(404, 'User not found');
-  }
-
-  const encryptedPassword = await bcrypt.hash(payload.password, 10);
-
-  await UserCollection.updateOne(
-    { _id: user._id },
-    { password: encryptedPassword },
-  );
-
-  const emailOptions = {
-    from: getEnvVar('SMTP_FROM'),
-    to: user.email,
-    subject: 'Password successfully reset',
-    html: `<p>Your password was successfully reset. You can log with your new password</p>`,
-  };
-
-  try {
-    await sendEmail(emailOptions);
-  } catch (error) {
-    throw createHttpError(500, `Failled to send email, please try again later`);
-  }
+  return await UserCollection.create({ ...payload, password: hashPassword });
 };
 
 export const loginUser = async (payload) => {
@@ -179,10 +129,6 @@ export const loginUser = async (payload) => {
   const user = await findUser({ email });
   if (!user) {
     throw createHttpError(401, 'Email or password invalid');
-  }
-
-  if (!user.verify) {
-    throw createHttpError(401, 'Email not verified');
   }
 
   const passwordCompare = await bcrypt.compare(password, user.password);

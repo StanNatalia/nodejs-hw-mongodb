@@ -3,16 +3,11 @@ import { Router } from 'express';
 import { ctrlWrapper } from '../utils/ctrlWrapper.js';
 import { validateBody } from '../utils/validateBody.js';
 
-import { resetPasswordSchema } from '../validation/auth.js';
 import {
-  resetPasswordController,
-  verifyEmailController,
-} from '../controllers/auth.js';
-
-import {
+  requestResetEmailSchema,
+  resetPasswordSchema,
   authRegisterSchema,
   authLoginSchema,
-  requestResetEmailSchema,
 } from '../validation/auth.js';
 
 import {
@@ -20,6 +15,7 @@ import {
   loginController,
   refreshController,
   logoutController,
+  resetPasswordController,
   requestResetEmailController,
 } from '../controllers/auth.js';
 
@@ -42,8 +38,6 @@ authRouter.post(
   validateBody(authRegisterSchema),
   ctrlWrapper(registerController),
 );
-
-authRouter.get('/verify', verifyEmailController);
 
 authRouter.post(
   '/login',

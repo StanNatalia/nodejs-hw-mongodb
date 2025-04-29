@@ -1,5 +1,5 @@
 import cloudinary from 'cloudinary';
-import fs from 'node:fs/promises';
+// import fs from 'node:fs/promises';
 
 import { getEnvVar } from './getEnvVar';
 

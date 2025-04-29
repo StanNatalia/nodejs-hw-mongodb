@@ -11,6 +11,7 @@ export const SMTP = {
 };
 
 export const TEMPLATE_DIR = path.resolve('src', 'templates');
+export const TEMPORARY_UPLOAD_DIR = path.resolve('temp');
 
 export const CLOUDINARY = {
   CLOUD_NAME: 'CLOUD_NAME',
