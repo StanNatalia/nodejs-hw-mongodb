@@ -14,6 +14,7 @@ import { parseSortParams } from '../utils/parseSortParams.js';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 
 import { parseContactFilterParams } from '../utils/filter/parseContactFilterParams.js';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
 export const getContactsController = async (req, res) => {
   const paginationParams = parsePaginationParams(req.query);
@@ -51,14 +52,36 @@ export const getContactsByIdController = async (req, res, next) => {
 };
 
 export const addContactController = async (req, res) => {
+  const { name, phoneNumber, contactType } = req.body;
+
+  if (!name || !phoneNumber || !contactType) {
+    throw createHttpError(
+      400,
+      'Missing required field: name, phoneNumber, contactType',
+    );
+  }
+
   const { _id: userId } = req.user;
 
-  const data = await addContact({ ...req.body, userId });
+  let photo = null;
+  if (req.file) {
+    try {
+      photo = await saveFileToCloudinary(req.file);
+    } catch (error) {
+      throw createHttpError(500, 'Failed to upload photo to Cloudinary');
+    }
+  }
+
+  const contact = await addContact({ ...req.body, userId, photo: photo });
+
+  if (!contact) {
+    throw createHttpError(500, 'Failed to create contact');
+  }
 
   res.status(201).json({
     status: 201,
     message: 'Successfully added contact',
-    data,
+    data: contact,
   });
 };
 
@@ -82,8 +105,18 @@ export const upsetContactsController = async (req, res) => {
 
 export const patchContactsController = async (req, res) => {
   const { contactId } = req.params;
-  const { _id: userId } = req.user;
-  const result = await updateContacts(contactId, req.body, {}, userId);
+  let photo = null;
+
+  if (req.file) {
+    photo = await saveFileToCloudinary(req.file);
+  }
+
+  const updateData = {
+    ...req.body,
+    ...(photo ? { photo } : {}),
+  };
+
+  const result = await updateContacts(contactId, updateData, {}, req.user._id);
 
   if (!result) {
     throw createHttpError(404, `Contacts with id=${contactId} not found`);
