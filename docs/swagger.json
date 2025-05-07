@@ -80,6 +80,11 @@
             "name": "type",
             "schema": {
               "type": "string",
+              "enum": [
+                "work",
+                "home",
+                "personal"
+              ],
               "example": "home"
             }
           },
@@ -161,9 +166,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -263,6 +265,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
           "401": {
             "$ref": "#/components/responses/401"
           }
@@ -322,6 +327,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -430,6 +438,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
           "401": {
             "$ref": "#/components/responses/401"
           },
@@ -465,6 +476,9 @@
           "204": {
             "description": "Delete contact by id",
             "content": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"
